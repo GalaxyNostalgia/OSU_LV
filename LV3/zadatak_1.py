@@ -1,105 +1,77 @@
-'''
-a) Koliko mjerenja sadrži DataFrame? Kojeg je tipa svaka veliˇcina? Postoje li izostale ili
-duplicirane vrijednosti? Obrišite ih ako postoje. Kategoriˇcke veliˇcine konvertirajte u tip
-category.
-b) Koja tri automobila ima najve´cu odnosno najmanju gradsku potrošnju? Ispišite u terminal:
-ime proizvod¯acˇa, model vozila i kolika je gradska potrošnja.
-c) Koliko vozila ima veliˇcinu motora izme ¯ du 2.5 i 3.5 L? Kolika je prosjeˇcna C02 emisija
-plinova za ova vozila?
-d) Koliko mjerenja se odnosi na vozila proizvo ¯ daˇca Audi? Kolika je prosjeˇcna emisija C02
-plinova automobila proizvod¯acˇa Audi koji imaju 4 cilindara?
-e) Koliko je vozila s 4,6,8. . . cilindara? Kolika je prosjeˇcna emisija C02 plinova s obzirom na
-broj cilindara?
-f) Kolika je prosjeˇcna gradska potrošnja u sluˇcaju vozila koja koriste dizel, a kolika za vozila
-koja koriste regularni benzin? Koliko iznose medijalne vrijednosti?
-g) Koje vozilo s 4 cilindra koje koristi dizelski motor ima najve´cu gradsku potrošnju goriva?
-h) Koliko ima vozila ima ruˇcni tip mjenjaˇca (bez obzira na broj brzina)?
-i) Izracˇunajte korelaciju izmed¯u numericˇkih velicˇina. Komentirajte dobiveni rezultat.
-'''
-
-
 import pandas as pd
-print("Zadatak a")
-data = pd.read_csv ('data_C02_emission.csv')
 
-data.dropna(axis = 0)
-data.drop_duplicates()
-data = data.reset_index(drop = True)
+class CO2EmissionAnalyzer:
+    def __init__(self, file_path):
+        self.df = pd.read_csv(file_path)
+        self._prepare_data()
+    
+    def _prepare_data(self):
+        self.df.drop_duplicates(inplace=True)
+        self.df.dropna(inplace=True)
+        categorical_columns = ['Make', 'Model', 'Vehicle Class', 'Transmission', 'Fuel Type']
+        for col in categorical_columns:
+            self.df[col] = self.df[col].astype('category')
+    
+    def get_summary(self):
+        return {
+            "num_measurements": self.df.shape[0],
+            "data_types": self.df.dtypes,
+            "missing_values": self.df.isnull().sum(),
+            "duplicate_values": self.df.duplicated().sum()
+        }
+    
+    def get_top_fuel_consumers(self, n=3):
+        return {
+            "highest_city_fuel": self.df.nlargest(n, 'Fuel Consumption City (L/100km)')[['Make', 'Model', 'Fuel Consumption City (L/100km)']],
+            "lowest_city_fuel": self.df.nsmallest(n, 'Fuel Consumption City (L/100km)')[['Make', 'Model', 'Fuel Consumption City (L/100km)']]
+        }
+    
+    def get_engine_size_range_data(self, min_size=2.5, max_size=3.5):
+        filtered = self.df[(self.df['Engine Size (L)'] >= min_size) & (self.df['Engine Size (L)'] <= max_size)]
+        return {
+            "num_vehicles": len(filtered),
+            "avg_co2_emissions": filtered['CO2 Emissions (g/km)'].mean()
+        }
+    
+    def get_audi_emissions(self):
+        audi_cars = self.df[self.df['Make'] == 'Audi']
+        audi_4_cyl = audi_cars[audi_cars['Cylinders'] == 4]
+        return {
+            "num_audi": len(audi_cars),
+            "avg_co2_emissions_4cyl": audi_4_cyl['CO2 Emissions (g/km)'].mean()
+        }
+    
+    def get_cylinders_emissions(self):
+        return self.df[self.df['Cylinders'].isin([4, 6, 8])].groupby('Cylinders')['CO2 Emissions (g/km)'].mean()
+    
+    def get_fuel_consumption_by_type(self):
+        fuel_stats = {}
+        for fuel in ['D', 'X']:  
+            fuel_df = self.df[self.df['Fuel Type'] == fuel]
+            fuel_stats[fuel] = {
+                "avg_city_fuel": fuel_df['Fuel Consumption City (L/100km)'].mean(),
+                "median_city_fuel": fuel_df['Fuel Consumption City (L/100km)'].median()
+            }
+        return fuel_stats
+    
+    def get_worst_4cyl_diesel(self):
+        diesel_4cyl = self.df[(self.df['Cylinders'] == 4) & (self.df['Fuel Type'] == 'D')]
+        return diesel_4cyl.nlargest(1, 'Fuel Consumption City (L/100km)')[['Make', 'Model', 'Fuel Consumption City (L/100km)']]
+    
+    def get_manual_transmission_count(self):
+        return len(self.df[self.df['Transmission'].str.startswith('M')])
+    
+    def get_correlation_matrix(self):
+        return self.df.select_dtypes(include=['float64', 'int64']).corr()
 
-print(f"Sadrži: {len(data)}")
-
-print(f"Info: {data.info()}")
-
-print(data)
-print(data.head(5))
-print(data.tail(3))
-print(data.info())
-print(data.describe())
-print(data.max())
-print(data.min())
-
-print("Zadatak b")
-highest_consumption = data.nlargest(3, 'Fuel Consumption City (L/100km)')
-
-lowest_consumption = data.nsmallest(3, 'Fuel Consumption City (L/100km)')
-
-print("Three cars with the highest city fuel consumption:")
-for index, row in highest_consumption.iterrows():
-    print(f"Manufacturer: {row['Make']}, Model: {row['Model']}, City Fuel Consumption: {row['Fuel Consumption City (L/100km)']} L/100km")
-
-print("\nThree cars with the lowest city fuel consumption:")
-for index, row in lowest_consumption.iterrows():
-    print(f"Manufacturer: {row['Make']}, Model: {row['Model']}, City Fuel Consumption: {row['Fuel Consumption City (L/100km)']} L/100km")
-
-print("Zadatak c")
-engine_size = data[(data['Engine Size (L)'] >= 2.5) & (data['Engine Size (L)'] <= 3.5)]
-average_c02 = engine_size['CO2 Emissions (g/km)'].mean()
-print(f"Number of vehicles with engine size between 2.5 and 3.5 L: {len(engine_size)} and average C02 emissions: {average_c02} g/km")
-
-print("Zadatak d")
-audi_vehicles = data[data['Make'] == 'Audi']
-print(f"Number of Audi vehicles: {len(audi_vehicles)}")
-audi4cylinder = audi_vehicles[audi_vehicles['Cylinders'] == 4]
-print(f"Audi 4 cylinder emissions: {audi4cylinder['CO2 Emissions (g/km)'].mean()} g/km")
-
-print("Zadatak e")
-
-print(data['Cylinders'].value_counts())
-threecylinder = data[data['Cylinders'] == 3]
-fourcylinder = data[data['Cylinders'] == 4]
-fivecylinder = data[data['Cylinders'] == 5]
-sixcylinder = data[data['Cylinders'] == 6]
-eightcylinder = data[data['Cylinders'] == 8]
-tencylinder = data[data['Cylinders'] == 10]
-twelvecylinder = data[data['Cylinders'] == 12]
-sixteencylinder = data[data['Cylinders'] == 16]
-
-print(f"Average C02 emissions for 3 cylinder vehicles: {threecylinder['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Average C02 emissions for 4 cylinder vehicles: {fourcylinder['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Average C02 emissions for 5 cylinder vehicles: {fivecylinder['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Average C02 emissions for 6 cylinder vehicles: {sixcylinder['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Average C02 emissions for 8 cylinder vehicles: {eightcylinder['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Average C02 emissions for 10 cylinder vehicles: {tencylinder['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Average C02 emissions for 12 cylinder vehicles: {twelvecylinder['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Average C02 emissions for 16 cylinder vehicles: {sixteencylinder['CO2 Emissions (g/km)'].mean()} g/km")
-
-print("Zadatak f")
-print(data['Fuel Type'].value_counts())
-diesel = data[data['Fuel Type'] == 'D']
-regular_gasoline = data[data['Fuel Type'] == 'Z']
-print(f"Average C02 emissions for diesel vehicles: {diesel['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Average C02 emissions for regular gasoline vehicles: {regular_gasoline['CO2 Emissions (g/km)'].mean()} g/km")
-print(f"Median C02 emissions for diesel vehicles: {diesel['CO2 Emissions (g/km)'].median()} g/km")
-print(f"Median C02 emissions for regular gasoline vehicles: {regular_gasoline['CO2 Emissions (g/km)'].median()} g/km")
-
-print("Zadatak g")
-diesel4cylinder = diesel[(diesel['Cylinders'] == 4) & (diesel['Fuel Type'] == 'D')]
-highest_city_consumption = print(f"{diesel4cylinder.nlargest(1, 'Fuel Consumption City (L/100km)')}")
-
-print("Zadatak h")
-print(data['Transmission'].value_counts())
-manual = data[data['Transmission'].str.startswith('M')]
-print(f"Number of vehicles with manual: {len(manual)}")
-
-print("Zadatak i")
-print(data.corr(numeric_only = True))
+if __name__ == "__main__":
+    analyzer = CO2EmissionAnalyzer('LV3/resources/data_C02_emission.csv')
+    print(analyzer.get_summary())
+    print(analyzer.get_top_fuel_consumers())
+    print(analyzer.get_engine_size_range_data())
+    print(analyzer.get_audi_emissions())
+    print(analyzer.get_cylinders_emissions())
+    print(analyzer.get_fuel_consumption_by_type())
+    print(analyzer.get_worst_4cyl_diesel())
+    print(analyzer.get_manual_transmission_count())
+    print(analyzer.get_correlation_matrix())

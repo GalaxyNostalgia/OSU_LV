@@ -1,45 +1,55 @@
-'''
-a) Pomo´cu histograma prikažite emisiju C02 plinova. Komentirajte dobiveni prikaz.
-b) Pomo´cu dijagrama raspršenja prikažite odnos izme ¯ du gradske potrošnje goriva i emisije
-C02 plinova. Komentirajte dobiveni prikaz. Kako biste bolje razumjeli odnose izme ¯ du
-veliˇcina, obojite toˇckice na dijagramu raspršenja s obzirom na tip goriva.
-c) Pomo´cu kutijastog dijagrama prikažite razdiobu izvangradske potrošnje s obzirom na tip
-goriva. Primje´cujete li grubu mjernu pogrešku u podacima?
-d) Pomo´cu stupˇcastog dijagrama prikažite broj vozila po tipu goriva. Koristite metodu
-groupby.
-e) Pomo´cu stupˇcastog grafa prikažite na istoj slici prosjeˇcnu C02 emisiju vozila s obzirom na
-broj cilindara.
-'''
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv('data_C02_emission.csv')
-print("Zadatak a")
-plt.figure()
-data['CO2 Emissions (g/km)'].plot(kind='hist')
+file = 'LV3/resources/data_C02_emission.csv'
+df = pd.read_csv(file)
+
+plt.figure(figsize=(10, 6))
+plt.hist(df['CO2 Emissions (g/km)'], bins=30, edgecolor='black', alpha=0.7)
+plt.xlabel("CO2 Emissions (g/km)")
+plt.ylabel("Frequency")
+plt.title("Histogram of CO2 Emissions")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.show()
 
-print("Zadatak b")
-grouped = data.groupby('Fuel Consumption City (L/100km)')
-plt.scatter(data['Fuel Consumption City (L/100km)'], data['CO2 Emissions (g/km)'], c=data['Fuel Type'].astype('category').cat.codes)
-plt.xlabel('Fuel Consumption City (L/100km)')
-plt.ylabel('CO2 Emissions (g/km)')
+fuel_colors = {'X': 'blue', 'Z': 'green', 'D': 'red', 'E': 'purple', 'N': 'orange'}
+colors = df['Fuel Type'].map(fuel_colors)
+
+plt.figure(figsize=(10, 6))
+plt.scatter(df['Fuel Consumption City (L/100km)'], df['CO2 Emissions (g/km)'], c=colors, alpha=0.7, edgecolors='black')
+plt.xlabel("Fuel Consumption City (L/100km)")
+plt.ylabel("CO2 Emissions (g/km)")
+plt.title("Scatter Plot: Fuel Consumption vs CO2 Emissions")
+plt.grid(True, linestyle='--', alpha=0.7)
 plt.show()
 
-print("Zadatak c")
-data.boxplot(column='Fuel Consumption City (L/100km)', by='Fuel Type')
+fuel_types = df['Fuel Type'].unique()
+data = [df[df['Fuel Type'] == fuel]['Fuel Consumption Hwy (L/100km)'].dropna() for fuel in fuel_types]
+
+plt.figure(figsize=(10, 6))
+plt.boxplot(data, labels=fuel_types)
+plt.xlabel("Fuel Type")
+plt.ylabel("Highway Fuel Consumption (L/100km)")
+plt.title("Boxplot: Highway Fuel Consumption by Fuel Type")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.show()
 
-print("Zadatak d")
-fuel = data.groupby('Fuel Type')
-fuel.size().plot(kind='bar')
+fuel_counts = df['Fuel Type'].value_counts()
+
+plt.figure(figsize=(8, 6))
+plt.bar(fuel_counts.index, fuel_counts.values, color='skyblue', edgecolor='black')
+plt.xlabel("Fuel Type")
+plt.ylabel("Number of Vehicles")
+plt.title("Number of Vehicles by Fuel Type")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.show()
 
-print("Zadatak e")
-cylinders_group = data.groupby('Cylinders')['CO2 Emissions (g/km)'].mean()
-plt.figure()
-cylinders_group.plot(kind='bar', color='blue')
-plt.title('Average CO2 Emissions (g/km) by Number of Cylinders')
-plt.xlabel('Number of Cylinders')
-plt.ylabel('Average CO2 Emissions (g/km)')
+cylinders_co2 = df.groupby('Cylinders')['CO2 Emissions (g/km)'].mean()
+
+plt.figure(figsize=(8, 6))
+plt.bar(cylinders_co2.index, cylinders_co2.values, color='lightcoral', edgecolor='black')
+plt.xlabel("Number of Cylinders")
+plt.ylabel("Average CO2 Emissions (g/km)")
+plt.title("Average CO2 Emissions by Number of Cylinders")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.show()

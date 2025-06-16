@@ -1,35 +1,30 @@
-'''Skripta zadatak_3.py uˇcitava sliku ’road.jpg’. Manipulacijom odgovaraju ́ce
-numpy matrice pokušajte:
-a) posvijetliti sliku,
-b) prikazati samo drugu ˇcetvrtinu slike po širini,
-c) zarotirati sliku za 90 stupnjeva u smjeru kazaljke na satu,
-d) zrcaliti sliku.'''
-
-
 import numpy as np
+import cv2
 import matplotlib.pyplot as plt
 
-img = plt.imread("road.jpg")
-img = img[:,:,0].copy()
-bright_img = np.clip(img + 50, 0, 255)   
-print(img.shape)
-print(img.dtype)
-plt.figure(1)
-plt.imshow(bright_img , cmap="gray")
-plt.show()
+image = cv2.imread("LV2/resources/road.jpg")
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  
 
-plt.figure(2)
-plt.imshow(img[:,img.shape[1]//2:], cmap="gray")
-plt.show()
+bright_image = np.clip(image + 50, 0, 255).astype(np.uint8)
 
-rotated_img = np.rot90(img)
-rotated_img = np.rot90(rotated_img)
-rotated_img = np.rot90(rotated_img)
-plt.figure(3)
-plt.imshow(rotated_img, cmap="gray")
-plt.show()
+height, width, _ = image.shape
+second_quarter = image[:, width//4:width//2]
 
-flipped_img = np.fliplr(img)
-plt.figure(4)
-plt.imshow(flipped_img, cmap="gray")
+rotated_image = np.rot90(image, k=-1)
+
+mirrored_image = np.fliplr(image)
+
+fig, axes = plt.subplots(1, 4, figsize=(15, 5))
+axes[0].imshow(bright_image)
+axes[0].set_title("Brightened")
+axes[1].imshow(second_quarter)
+axes[1].set_title("Second Quarter")
+axes[2].imshow(rotated_image)
+axes[2].set_title("Rotated 90°")
+axes[3].imshow(mirrored_image)
+axes[3].set_title("Mirrored")
+
+for ax in axes:
+    ax.axis("off")
+
 plt.show()

@@ -2,15 +2,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import svm
-
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import GridSearchCV
 
@@ -43,7 +40,7 @@ def plot_decision_regions(X, y, classifier, resolution=0.02):
 
 
 # ucitaj podatke
-data = pd.read_csv("Social_Network_Ads.csv")
+data = pd.read_csv("LV6/resources/Social_Network_Ads.csv")
 print(data.info())
 
 data.hist()
@@ -83,7 +80,6 @@ plt.tight_layout()
 plt.show()
 
 
-
 KNN_model = KNeighborsClassifier(n_neighbors=5)
 KNN_model.fit(X_train_n, y_train)
 
@@ -107,11 +103,9 @@ for k in [1, 100]:
     knn = KNeighborsClassifier(n_neighbors=k)
     knn.fit(X_train_n, y_train)
 
-    y_train_k = knn.predict(X_train_n)
     y_test_k = knn.predict(X_test_n)
 
     print(f"\nKNN klasifikator (K={k}):")
-    print("Tocnost train: " + "{:0.3f}".format(accuracy_score(y_train, y_train_k)))
     print("Tocnost test: " + "{:0.3f}".format(accuracy_score(y_test, y_test_k)))
 
     plot_decision_regions(X_train_n, y_train, classifier=knn)
@@ -193,4 +187,3 @@ plt.title("Optimalni SVM (RBF)")
 plt.legend(loc='upper left')
 plt.tight_layout()
 plt.show()
-
